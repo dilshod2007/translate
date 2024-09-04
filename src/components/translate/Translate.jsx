@@ -7,14 +7,14 @@ const Translate = () => {
   const [searchValue, setSearchValue] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [loading, setLoading] = useState(false); 
-  
-
+  const dispatch = useDispatch(); 
 
   const handleSearchTranslate = async (e) => {
     e.preventDefault();
     setLoading(true); 
 
-    const url = 'https://deep-translate1.p.rapidapi.com/language/translate/v2';
+    const data = 'https://deep-translate1.p.rapidapi.com/language/translate/v2';
+    
     const options = {
       method: 'POST',
       headers: {
@@ -30,16 +30,36 @@ const Translate = () => {
     };
 
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(data, options);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch translation.');
+      }
+
       const result = await response.json();
-      setTranslatedText(result.data.translations.translatedText);
-      toast.success('Translation successful!'); 
+      
+      if (result && result.data && result.data.translations) {
+        const translatedText = result.data.translations.translatedText;
+        dispatch({type: 'SET_TRANSLATE', payload: translatedText})
+        setTranslatedText(translatedText);
+        toast.success('Translation successful!'); 
+      } else {
+        throw new Error('Invalid translation data.');
+      }
+
     } catch (error) {
       console.error(error);
       toast.error('Failed to translate. Please try again.'); 
     } finally {
       setLoading(false); 
     }
+  };
+
+  const handleClearTranslation = () => {
+    setTranslatedText('');
+    setSearchValue('');
+    dispatch({type: 'SET_TRANSLATE', payload: ''}); 
+    toast.info('Translation cleared');
   };
 
   return (
@@ -50,6 +70,7 @@ const Translate = () => {
           <input
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             type="text"
+            value={searchValue}
             placeholder="Enter text in Uzbek..."
             onChange={(e) => setSearchValue(e.target.value)}
           />
@@ -68,6 +89,12 @@ const Translate = () => {
           <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
             <h3 className="text-xl font-semibold text-gray-700 mb-2">Translation:</h3>
             <p className="text-gray-800">{translatedText}</p>
+            <button
+              onClick={handleClearTranslation}
+              className="mt-4 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+            >
+              Clear Translation
+            </button>
           </div>
         )}
       </div>
